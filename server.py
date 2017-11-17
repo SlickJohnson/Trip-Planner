@@ -1,71 +1,85 @@
-"""App API server main file."""
+"""API server main file."""
 
 from flask import Flask, request, make_response
 from flask_restful import Resource, Api
 from pymongo import MongoClient
 from utils.mongo_json_encoder import JSONEncoder
-# from bson.objectid import ObjectId
+from bson.objectid import ObjectId
 #  import bcrypt
 
 app = Flask(__name__)
 mongo = MongoClient('localhost', 27017)
 app.db = mongo.trip_planner_development
+users_collection = app.db.users
 app.bcrypt_rounds = 12
 api = Api(app)
 
 
 class User(Resource):
-    """User resource that handles all requests related to user."""
+    """Handle requests related to user document."""
 
     def post(self):
-        """Add new user document to users collection."""
-        new_user = request.json
+        """Add new user document in users colleciton."""
+        user = request.json
 
-        users_collection = app.db.users
+        result = users_collection.insert_one(user)
 
-        result = users_collection.insert_one(new_user)
+        posted_user = users_collection.find_one(
+            {'_id': ObjectId(result.inserted_id)}
+        )
 
-        return "User {} was added yuuuh".format(result.inserted_id)
+        return posted_user
 
     def get(self):
-        """Get specified user document."""
-        users_collection = app.db.users
+        """Get specified user document from users colleciton."""
+        user_id = request.args.get('id')
 
-        name = request.args.get("name")
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
 
-        response = users_collection.find_one({"name": name})
+        print(user)
+        if user is None:
+            return None, 404, None
 
-        return response
-
-    def delete(self):
-        """Delete specified user object in from users collection."""
-        name = request.args.get("name")
-
-        users_collection = app.db.users
-
-        response = users_collection.delete_one({"name": name})
-        print(response)
-
-        return "{} was deleted yuuuh".format(name)
+        return user
 
     def put(self):
-        """Replace user document with new user."""
-        name = request.args.get("name")
+        """Replace user in users collection."""
+        user = request.json
+        user_id = request.args.get('id')
 
-        users_collection = app.db.users
-
-        response = users_collection.find_one_and_replace(
-            {"name": name},
-            {"name": "gucci mane"}
+        result = users_collection.find_one_and_replace(
+            {'_id': ObjectId(user_id)}, user
         )
-        print(response)
 
-        return "{} was replaced yuuuh".format(name)
+        return result
+
+    def patch(self):
+        """Update user in users collection."""
+        updated_info = request.json  # Dict containing updated key: values
+        user_id = request.args.get('id')
+
+        result = users_collection.find_one_and_update(
+            {'_id': ObjectId(user_id)},
+            {'$set': updated_info}
+        )
+
+        return result
+
+    def delete(self):
+        """Delete user document from users collection."""
+        user_id = request.args.get('id')
+
+        result = users_collection.find_one_and_delete(
+            {'_id': ObjectId(user_id)}
+        )
+
+        return result
 
 
 # API Routes
 api.add_resource(User, '/user')
-# api.add_resource(Trip, '/user/trips', '/trips/<string:trip_id>')
+# api.add_resource(Trips, '/user/trips')
+# api.add_resource(Trip, '/user/trips/<string:trip_id>')
 
 
 # Custom JSON serializer for flask_restful
