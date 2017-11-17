@@ -19,7 +19,7 @@ class User(Resource):
     """Handle requests related to user document."""
 
     def post(self):
-        """Add new user document in users colleciton."""
+        """Add new user document to users colleciton."""
         user = request.json
 
         result = users_collection.insert_one(user)
@@ -76,9 +76,66 @@ class User(Resource):
         return result
 
 
+class Trip(Resource):
+    """Handle requests related to trip objects."""
+
+    def post(self):
+        """Add new trip object to user."""
+        trip = request.json
+        user_id = request.args.get('user_id')
+
+        result = users_collection.find_one_and_update(
+            {'_id': ObjectId(user_id)},
+            {'$push': {'trips': trip}}
+        )
+
+        return result
+
+    def get(self):
+        """Get specified trip object from user."""
+        user_id = request.args.get('user_id')
+
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
+
+        return user["trips"]
+
+    def put(self):
+        """Replace trip object in user."""
+        user = request.json
+        user_id = request.args.get('id')
+
+        result = users_collection.find_one_and_replace(
+            {'_id': ObjectId(user_id)}, user
+        )
+
+        return result
+
+    def patch(self):
+        """Update trip object in user."""
+        updated_info = request.json  # Dict containing updated key: values
+        user_id = request.args.get('id')
+
+        result = users_collection.find_one_and_update(
+            {'_id': ObjectId(user_id)},
+            {'$set': updated_info}
+        )
+
+        return result
+
+    def delete(self):
+        """Delete trip object from user."""
+        user_id = request.args.get('id')
+
+        result = users_collection.find_one_and_delete(
+            {'_id': ObjectId(user_id)}
+        )
+
+        return result
+
+
 # API Routes
 api.add_resource(User, '/user')
-# api.add_resource(Trips, '/user/trips')
+api.add_resource(Trip, '/user/trips')
 # api.add_resource(Trip, '/user/trips/<string:trip_id>')
 
 
