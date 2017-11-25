@@ -5,8 +5,8 @@ from flask_restful import Resource, Api
 from pymongo import MongoClient
 from utils.mongo_json_encoder import JSONEncoder
 from bson.objectid import ObjectId
-import pdb
-#  import bcrypt
+# import pdb
+# import bcrypt
 
 app = Flask(__name__)
 mongo = MongoClient('localhost', 27017)
@@ -115,16 +115,7 @@ class Trip(Resource):
 
     def patch(self):
         """Update trip object in user."""
-        updated_info = request.json  # Dict containing updated key: values
-        email = request.args.get('email')
-        trip_index = request.args.get('trip_index')
-
-        result = users_collection.find_one_and_update(
-            {'email': email},
-            {'$set': updated_info}
-        )
-
-        return result
+        self.put()
 
     def delete(self):
         """Delete trip object from user."""
