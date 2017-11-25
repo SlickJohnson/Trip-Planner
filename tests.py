@@ -126,7 +126,27 @@ class TripPlannerTripTestCase(unittest.TestCase):
 
     def testPostTrip(self):
         """Test POST request for Trip resource."""
-        pass
+        response = self.app.post('/user/trips?email=trips@example.com',
+                                 headers=None,
+                                 data=json.dumps(
+                                        dict(
+                                            name='2018 Vacation WOOOO',
+                                            waypoints=[
+                                                'Alaska',
+                                                'Yee',
+                                                'That',
+                                                'Place'
+                                            ],
+                                            completed=False
+                                        )
+                                    ),
+                                 content_type='application/json'
+                                 )
+
+        json_response = json.loads(response.data.decode())
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(json_response['email'], 'trips@example.com')
 
     def testDeleteTrip(self):
         """Test DEL request for Trip resource."""
