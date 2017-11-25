@@ -5,6 +5,7 @@ from flask_restful import Resource, Api
 from pymongo import MongoClient
 from utils.mongo_json_encoder import JSONEncoder
 from bson.objectid import ObjectId
+import pdb
 #  import bcrypt
 
 app = Flask(__name__)
@@ -126,16 +127,16 @@ class Trip(Resource):
         return result
 
     def delete(self):
-        # TODO Complete func
         """Delete trip object from user."""
-        trip = request.json
         email = request.args.get('email')
-        trip_index = request.args.get('trip_index')
+        trip_name = request.args.get('trip_name')
 
         result = users_collection.find_one_and_update(
             {'email': email},
-            {'$pull': {"trips." + trip_index: trip}}
+            {'$pull': {'trips': {'name': trip_name}}}
         )
+
+        return result
 
 
 # API Routes
