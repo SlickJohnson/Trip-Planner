@@ -89,7 +89,7 @@ class Trip(Resource):
             {'$push': {'trips': trip}}
         )
 
-        return result
+        return (result, 201, None)
 
     def get(self):
         """Get specified trip object from user."""
