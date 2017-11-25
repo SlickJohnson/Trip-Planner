@@ -28,13 +28,13 @@ class User(Resource):
             {'_id': ObjectId(result.inserted_id)}
         )
 
-        return posted_user
+        return (posted_user, 201, None)
 
     def get(self):
         """Get specified user document from users colleciton."""
-        user_id = request.args.get('id')
+        email = request.args.get('email')
 
-        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        user = users_collection.find_one({'email': email})
 
         print(user)
         if user is None:
@@ -45,10 +45,10 @@ class User(Resource):
     def put(self):
         """Replace user in users collection."""
         user = request.json
-        user_id = request.args.get('id')
+        email = request.args.get('email')
 
         result = users_collection.find_one_and_replace(
-            {'_id': ObjectId(user_id)}, user
+            {'emal': email}, user
         )
 
         return result
@@ -56,10 +56,10 @@ class User(Resource):
     def patch(self):
         """Update user in users collection."""
         updated_info = request.json  # Dict containing updated key: values
-        user_id = request.args.get('id')
+        email = request.args.get('email')
 
         result = users_collection.find_one_and_update(
-            {'_id': ObjectId(user_id)},
+            {'email': email},
             {'$set': updated_info}
         )
 
@@ -67,10 +67,10 @@ class User(Resource):
 
     def delete(self):
         """Delete user document from users collection."""
-        user_id = request.args.get('id')
+        email = request.args.get('email')
 
         result = users_collection.find_one_and_delete(
-            {'_id': ObjectId(user_id)}
+            {'email': email}
         )
 
         return result
@@ -82,10 +82,10 @@ class Trip(Resource):
     def post(self):
         """Add new trip object to user."""
         trip = request.json
-        user_id = request.args.get('user_id')
+        email = request.args.get('email')
 
         result = users_collection.find_one_and_update(
-            {'_id': ObjectId(user_id)},
+            {'email': email},
             {'$push': {'trips': trip}}
         )
 
@@ -93,19 +93,21 @@ class Trip(Resource):
 
     def get(self):
         """Get specified trip object from user."""
-        user_id = request.args.get('user_id')
+        email = request.args.get('email')
 
-        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        user = users_collection.find_one({'email': email})
 
         return user["trips"]
 
     def put(self):
         """Replace trip object in user."""
-        user = request.json
-        user_id = request.args.get('id')
+        trip = request.json
+        email = request.args.get('email')
+        trip_index = request.args.get('trip_index')
 
-        result = users_collection.find_one_and_replace(
-            {'_id': ObjectId(user_id)}, user
+        result = users_collection.find_one_and_update(
+            {'email': email},
+            {'$set': {"trips." + trip_index: trip}}
         )
 
         return result
@@ -113,30 +115,33 @@ class Trip(Resource):
     def patch(self):
         """Update trip object in user."""
         updated_info = request.json  # Dict containing updated key: values
-        user_id = request.args.get('id')
+        email = request.args.get('email')
+        trip_index = request.args.get('trip_index')
 
         result = users_collection.find_one_and_update(
-            {'_id': ObjectId(user_id)},
+            {'email': email},
             {'$set': updated_info}
         )
 
         return result
 
     def delete(self):
+        # TODO Complete func
         """Delete trip object from user."""
-        user_id = request.args.get('id')
+        trip = request.json
+        email = request.args.get('email')
+        trip_index = request.args.get('trip_index')
 
-        result = users_collection.find_one_and_delete(
-            {'_id': ObjectId(user_id)}
+        result = users_collection.find_one_and_update(
+            {'email': email},
+            {'$pull': {"trips." + trip_index: trip}}
         )
-
-        return result
 
 
 # API Routes
 api.add_resource(User, '/user')
 api.add_resource(Trip, '/user/trips')
-# api.add_resource(Trip, '/user/trips/<string:trip_id>')
+# api.add_resource(Trip, '/user/trips/<string:trip_index>')
 
 
 # Custom JSON serializer for flask_restful
