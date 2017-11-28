@@ -5,7 +5,7 @@ from flask_restful import Resource, Api
 from pymongo import MongoClient
 from utils.mongo_json_encoder import JSONEncoder
 from bson.objectid import ObjectId
-# import pdb
+import pdb
 import bcrypt
 
 app = Flask(__name__)
@@ -41,15 +41,23 @@ class User(Resource):
 
     def get(self):
         """Get specified user document from users colleciton."""
-        email = request.args.get('email')
+        # pdb.set_trace()
+        username = request.authorization.username
+        password = request.authorization.password
 
-        user = users_collection.find_one({'email': email})
+        user = users_collection.find_one({'email': username})
 
-        print(user)
         if user is None:
             return None, 404, None
 
-        return user
+        encodedPassword = password.encode('utf-8')
+
+        # Method 2: Use checkpw
+        if bcrypt.checkpw(encodedPassword, user['password'].encode('utf-8')):
+            return (user, 200, None)
+        else:
+            return (None, 401, None)
+
 
     def put(self):
         """Replace user in users collection."""
