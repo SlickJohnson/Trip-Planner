@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from utils.mongo_json_encoder import JSONEncoder
 from bson.objectid import ObjectId
 # import pdb
-# import bcrypt
+import bcrypt
 
 app = Flask(__name__)
 mongo = MongoClient('localhost', 27017)
@@ -21,9 +21,17 @@ class User(Resource):
 
     def post(self):
         """Add new user document to users colleciton."""
-        user = request.json
+        username = request.authorization.username
+        password = request.authorization.password
 
-        result = users_collection.insert_one(user)
+        encodedPassword = password.encode('utf-8')
+
+        hashed = bcrypt.hashpw(
+            encodedPassword, bcrypt.gensalt(app.bcrypt_rounds)
+        ).decode()
+
+        result = users_collection.insert_one(
+            {"email": username, "password": hashed, "trips": []})
 
         posted_user = users_collection.find_one(
             {'_id': ObjectId(result.inserted_id)}
