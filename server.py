@@ -16,22 +16,44 @@ app.bcrypt_rounds = 12
 api = Api(app)
 
 
+def _validate_auth(email, password):
+    # pdb.set_trace()
+    user_collection = app.db.users
+    user = user_collection.find_one({'email': email})
+
+    if user is None:
+        return False
+    else:
+        # check if the hash we generate based on auth matches stored hash
+        return bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8'))
+
+def authenticated_request(func):
+    def wrapper(*args, **kwargs):
+        auth = request.authorization
+
+        if not auth or not _validate_auth(auth.username, auth.password):
+            return ({'error': 'Basic Auth Required.'}, 401, None)
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 class User(Resource):
     """Handle requests related to user document."""
 
     def post(self):
         """Add new user document to users colleciton."""
-        username = request.authorization.username
-        password = request.authorization.password
 
-        encodedPassword = password.encode('utf-8')
+        user_email = request.json['email']
+        user_password = request.json['password']
 
-        hashed = bcrypt.hashpw(
-            encodedPassword, bcrypt.gensalt(app.bcrypt_rounds)
+        hashed_password = bcrypt.hashpw(
+            user_password.encode('utf-8'), bcrypt.gensalt(app.bcrypt_rounds)
         ).decode()
 
         result = users_collection.insert_one(
-            {"email": username, "password": hashed, "trips": []})
+            {"email": user_email, "password": hashed_password, "trips": []})
 
         posted_user = users_collection.find_one(
             {'_id': ObjectId(result.inserted_id)}
@@ -39,26 +61,17 @@ class User(Resource):
 
         return (posted_user, 201, None)
 
+    @authenticated_request
     def get(self):
         """Get specified user document from users colleciton."""
         # pdb.set_trace()
         username = request.authorization.username
-        password = request.authorization.password
 
         user = users_collection.find_one({'email': username})
 
-        if user is None:
-            return None, 404, None
+        return (user, 200, None)
 
-        encodedPassword = password.encode('utf-8')
-
-        # Method 2: Use checkpw
-        if bcrypt.checkpw(encodedPassword, user['password'].encode('utf-8')):
-            return (user, 200, None)
-        else:
-            return (None, 401, None)
-
-
+    @authenticated_request
     def put(self):
         """Replace user in users collection."""
         user = request.json
