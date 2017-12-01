@@ -1,16 +1,17 @@
 """API server main file."""
 
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, g
 from flask_restful import Resource, Api
 from pymongo import MongoClient
 from utils.mongo_json_encoder import JSONEncoder
 from bson.objectid import ObjectId
-import pdb
+# import pdb
 import bcrypt
 
 app = Flask(__name__)
-mongo = MongoClient('localhost', 27017)
-app.db = mongo.trip_planner_development
+mongo = MongoClient('mongodb://pleasedonthackme:noreallyplease@ds127436.mlab.com:27436/trip_planner_production')
+app.db = mongo.trip_planner_production
+
 users_collection = app.db.users
 app.bcrypt_rounds = 12
 api = Api(app)
@@ -25,9 +26,13 @@ def _validate_auth(email, password):
         return False
     else:
         # check if the hash we generate based on auth matches stored hash
-        return bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8'))
+        g.setdefault('user', user)
+        return bcrypt.checkpw(
+            password.encode('utf-8'), user['password'].encode('utf-8'))
+
 
 def authenticated_request(func):
+    """Handle HTTP request methods that require basic auth."""
     def wrapper(*args, **kwargs):
         auth = request.authorization
 
@@ -44,7 +49,6 @@ class User(Resource):
 
     def post(self):
         """Add new user document to users colleciton."""
-
         user_email = request.json['email']
         user_password = request.json['password']
 
